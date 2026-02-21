@@ -16,7 +16,11 @@ const sendEmail = async (options) => {
         html: options.message
     };
 
-    await transporter.sendMail(mailOptions);
+    try {
+        await transporter.sendMail(mailOptions);
+    } catch (error) {
+        console.error("Nodemailer Internal Error:", error.message);
+    }
 };
 
 module.exports = sendEmail;

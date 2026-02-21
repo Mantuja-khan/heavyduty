@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { User, Loader2, LogOut } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { api } from "@/services/api";
@@ -14,6 +14,7 @@ const Profile = () => {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [orders, setOrders] = useState<any[]>([]);
+    const [selectedOrder, setSelectedOrder] = useState<any>(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -197,24 +198,32 @@ const Profile = () => {
                                                                 {new Date(order.createdAt).toLocaleDateString()}
                                                             </p>
                                                         </div>
-                                                        <div
-                                                            className={`px-2 py-1 rounded text-xs font-bold ${order.status === "Delivered"
+                                                        <div className="flex flex-col items-end gap-1">
+                                                            <div
+                                                                className={`px-2 py-1 rounded text-xs font-bold ${order.status === "Delivered"
                                                                     ? "bg-green-100 text-green-700"
                                                                     : order.status === "Cancelled"
                                                                         ? "bg-red-100 text-red-700"
                                                                         : "bg-yellow-100 text-yellow-700"
-                                                                }`}
-                                                        >
-                                                            {order.status}
+                                                                    }`}
+                                                            >
+                                                                {order.status.toUpperCase()}
+                                                            </div>
+                                                            <div className={`text-[10px] font-bold ${order.isPaid ? "text-green-600" : "text-amber-600"}`}>
+                                                                {order.isPaid ? "● PAID" : "○ UNPAID"}
+                                                            </div>
                                                         </div>
                                                     </div>
 
                                                     <div className="space-y-1 mb-3">
                                                         {order.orderItems.map((item: any, idx: number) => (
                                                             <div key={idx} className="flex justify-between text-xs">
-                                                                <span className="text-gray-500 truncate max-w-[150px]">
+                                                                <Link
+                                                                    to={`/product/${item.product && (typeof item.product === 'string' ? item.product : (item.product.slug || ''))}`}
+                                                                    className="text-gray-500 truncate max-w-[150px] hover:text-primary transition-colors"
+                                                                >
                                                                     {item.name} x {item.qty}
-                                                                </span>
+                                                                </Link>
                                                                 <span className="flex-shrink-0 text-gray-700">
                                                                     ₹{item.price.toLocaleString("en-IN")}
                                                                 </span>
@@ -224,9 +233,17 @@ const Profile = () => {
                                                 </div>
 
                                                 <div className="flex justify-between items-center pt-2 border-t border-gray-100 mt-2">
-                                                    <span className="font-bold text-sm text-gray-900">
-                                                        ₹{order.totalPrice.toLocaleString("en-IN")}
-                                                    </span>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-sm text-gray-900">
+                                                            ₹{order.totalPrice.toLocaleString("en-IN")}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => setSelectedOrder(order)}
+                                                            className="text-[10px] text-primary font-bold hover:underline mt-0.5 uppercase tracking-wider text-left"
+                                                        >
+                                                            View Details
+                                                        </button>
+                                                    </div>
                                                     {order.status !== "Delivered" && order.status !== "Cancelled" && (
                                                         <button
                                                             onClick={async () => {
@@ -262,6 +279,95 @@ const Profile = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Order Detail Modal */}
+            {selectedOrder && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-2xl rounded-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        {/* Modal Header */}
+                        <div className="bg-surface-dark px-6 py-4 flex items-center justify-between border-b border-primary/10">
+                            <h3 className="font-heading text-lg tracking-wider text-surface-dark-foreground uppercase">
+                                Order <span className="text-primary text-sm font-mono ml-2 lowercase">#{selectedOrder._id.slice(-6).toUpperCase()}</span>
+                            </h3>
+                            <button
+                                onClick={() => setSelectedOrder(null)}
+                                className="text-surface-dark-foreground/60 hover:text-white transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="p-6 max-h-[70vh] overflow-y-auto">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                <div>
+                                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Shipping Information</h4>
+                                    <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded border border-gray-100">
+                                        <p className="font-medium text-gray-900 mb-1">{user.name || user.username}</p>
+                                        <p>{selectedOrder.shippingAddress.address}</p>
+                                        <p>{selectedOrder.shippingAddress.city} - {selectedOrder.shippingAddress.postalCode}</p>
+                                        <p>{selectedOrder.shippingAddress.country}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Order Summary</h4>
+                                    <div className="text-sm space-y-2 bg-gray-50 p-3 rounded border border-gray-100">
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Date:</span>
+                                            <span className="font-medium text-gray-900">{new Date(selectedOrder.createdAt).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Status:</span>
+                                            <span className={`font-bold text-[10px] px-2 py-0.5 rounded ${selectedOrder.status === 'Delivered' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{selectedOrder.status.toUpperCase()}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Payment:</span>
+                                            <span className={`font-bold text-[10px] ${selectedOrder.isPaid ? 'text-green-600' : 'text-amber-600'}`}>{selectedOrder.isPaid ? '● PAID' : '○ PENDING'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Order Items</h4>
+                            <div className="space-y-4">
+                                {selectedOrder.orderItems.map((item: any, idx: number) => (
+                                    <div key={idx} className="flex gap-4 items-center bg-white p-3 border border-gray-100 rounded shadow-sm hover:border-primary/20 transition-colors">
+                                        <div className="w-16 h-16 bg-muted rounded flex-shrink-0 overflow-hidden border border-gray-100 flex items-center justify-center">
+                                            {item.image ? (
+                                                <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                                            ) : (
+                                                <span className="text-2xl">📦</span>
+                                            )}
+                                        </div>
+                                        <div className="flex-grow min-w-0">
+                                            <Link
+                                                to={`/product/${item.product && (typeof item.product === 'string' ? item.product : (item.product.slug || item.product.id || ''))}`}
+                                                className="font-heading text-sm text-gray-900 hover:text-primary transition-colors truncate block"
+                                                onClick={() => setSelectedOrder(null)}
+                                            >
+                                                {item.name.toUpperCase()}
+                                            </Link>
+                                            <p className="text-xs text-gray-500 mt-0.5">Quantity: {item.qty} × ₹{item.price.toLocaleString("en-IN")}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-bold text-sm text-gray-900">₹{(item.price * item.qty).toLocaleString("en-IN")}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-between items-center">
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Payable</span>
+                            <span className="font-heading text-xl text-primary font-bold">₹{selectedOrder.totalPrice.toLocaleString("en-IN")}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <Footer />
         </div>
     );

@@ -23,6 +23,7 @@ import AdminBlog from "./pages/admin/AdminBlog";
 import AdminInquiries from "./pages/admin/AdminInquiries";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminLayout from "./components/AdminLayout";
+import AdminRoute from "./components/AdminRoute";
 import LoadingBar from "./components/LoadingBar";
 import NotFound from "./pages/NotFound";
 
@@ -50,13 +51,15 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/career" element={<Career />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/admin" element={<AdminLogin />} />
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="products" element={<AdminProducts />} />
-            <Route path="blog" element={<AdminBlog />} />
-            <Route path="inquiries" element={<AdminInquiries />} />
-            <Route path="orders" element={<AdminOrders />} />
+          <Route path="/admin" element={<AdminRoute />}>
+            <Route element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="products" element={<AdminProducts />} />
+              <Route path="blog" element={<AdminBlog />} />
+              <Route path="inquiries" element={<AdminInquiries />} />
+              <Route path="orders" element={<AdminOrders />} />
+            </Route>
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

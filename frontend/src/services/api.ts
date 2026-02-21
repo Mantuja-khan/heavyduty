@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_URL = import.meta.env.VITE_API_BASE_URL
 
 export const api = {
     // Auth
@@ -242,7 +242,10 @@ export const api = {
             },
             body: JSON.stringify(orderData),
         });
-        if (!response.ok) throw new Error('Failed to create order');
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.message || 'Failed to create order');
+        }
         return response.json();
     },
 
@@ -280,7 +283,30 @@ export const api = {
         return response.json();
     },
 
+    updateOrderStatus: async (id: string, status: string, token: string) => {
+        const response = await fetch(`${API_URL}/orders/${id}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ status }),
+        });
+        if (!response.ok) throw new Error(`Failed to update order status: ${response.status}`);
+        return response.json();
+    },
+
     getAllOrders: async (token: string) => {
+        const response = await fetch(`${API_URL}/orders`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        if (!response.ok) throw new Error(`Failed to fetch orders: ${response.status}`);
+        return response.json();
+    },
+
+    getOrders: async (token: string) => { // Adding alias just in case
         const response = await fetch(`${API_URL}/orders`, {
             headers: {
                 Authorization: `Bearer ${token}`,

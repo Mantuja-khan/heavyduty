@@ -16,13 +16,9 @@ const AdminLayout = () => {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/admin");
-    } else {
-      setIsAdmin(true); // Ideally verify with backend
-    }
-  }, [navigate]);
+    // Auth is now handled by AdminRoute.tsx
+    setIsAdmin(true);
+  }, []);
 
   if (isAdmin === null) return null;
 

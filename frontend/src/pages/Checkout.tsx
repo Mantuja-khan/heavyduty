@@ -20,6 +20,11 @@ const Checkout = () => {
         postalCode: "",
         country: "India",
     });
+    const [contactInfo, setContactInfo] = useState({
+        name: "",
+        email: "",
+        phone: "",
+    });
 
     const { data: product, isLoading: isProductLoading } = useQuery({
         queryKey: ["product", slug],
@@ -28,10 +33,18 @@ const Checkout = () => {
     });
 
     useEffect(() => {
+        const userStr = localStorage.getItem("user");
         const token = localStorage.getItem("token");
         if (!token) {
             toast.error("Please login to proceed with checkout");
             navigate("/auth");
+        } else if (userStr) {
+            const user = JSON.parse(userStr);
+            setContactInfo({
+                name: user.name || "",
+                email: user.username || "", // username is used as email in this app
+                phone: user.phone || "",
+            });
         }
     }, [navigate]);
 
@@ -39,7 +52,6 @@ const Checkout = () => {
         e.preventDefault();
         setStep("payment");
     };
-
     const handlePayment = async () => {
         if (!product) return;
         setLoading(true);
@@ -59,11 +71,14 @@ const Checkout = () => {
                         qty: 1,
                         image: product.image_url,
                         price: product.price,
-                        product: product._id,
+                        product: product.id || product._id,
                     },
                 ],
                 shippingAddress: address,
                 totalPrice: product.price,
+                customerName: contactInfo.name,
+                customerEmail: contactInfo.email,
+                customerPhone: contactInfo.phone,
             };
 
             const { order, razorpayOrder } = await api.createOrder(orderData, token);
@@ -105,9 +120,9 @@ const Checkout = () => {
                     }
                 },
                 prefill: {
-                    name: "User Name", // Ideally get from user profile
-                    email: "user@example.com",
-                    contact: "9999999999"
+                    name: contactInfo.name || "Customer",
+                    email: contactInfo.email || "customer@example.com",
+                    contact: contactInfo.phone || ""
                 },
                 theme: {
                     color: "#F97316" // Orange-500
@@ -187,23 +202,44 @@ const Checkout = () => {
                             </h2>
 
                             {step === "address" ? (
-                                <form onSubmit={handleAddressSubmit} className="space-y-4">
-                                    <div className="grid md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Address</label>
-                                            <Input required value={address.address} onChange={e => setAddress({ ...address, address: e.target.value })} placeholder="Street Address / Flat No." className="bg-gray-50" />
+                                <form onSubmit={handleAddressSubmit} className="space-y-6">
+                                    <div className="border-b pb-4 mb-4">
+                                        <h3 className="text-sm font-bold text-gray-800 mb-4 uppercase tracking-wider">Contact Information</h3>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Full Name</label>
+                                                <Input required value={contactInfo.name} onChange={e => setContactInfo({ ...contactInfo, name: e.target.value })} placeholder="Enter your full name" className="bg-gray-50" />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Email Address</label>
+                                                <Input required type="email" value={contactInfo.email} onChange={e => setContactInfo({ ...contactInfo, email: e.target.value })} placeholder="email@example.com" className="bg-gray-50" />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Phone Number</label>
+                                                <Input required type="tel" value={contactInfo.phone} onChange={e => setContactInfo({ ...contactInfo, phone: e.target.value })} placeholder="Mobile Number" className="bg-gray-50" />
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">City</label>
-                                            <Input required value={address.city} onChange={e => setAddress({ ...address, city: e.target.value })} placeholder="City" className="bg-gray-50" />
-                                        </div>
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Postal Code</label>
-                                            <Input required value={address.postalCode} onChange={e => setAddress({ ...address, postalCode: e.target.value })} placeholder="PIN Code" className="bg-gray-50" />
-                                        </div>
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Country</label>
-                                            <Input disabled value={address.country} className="bg-gray-100" />
+                                    </div>
+
+                                    <div>
+                                        <h3 className="text-sm font-bold text-gray-800 mb-4 uppercase tracking-wider">Shipping Details</h3>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Address</label>
+                                                <Input required value={address.address} onChange={e => setAddress({ ...address, address: e.target.value })} placeholder="Street Address / Flat No." className="bg-gray-50" />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">City</label>
+                                                <Input required value={address.city} onChange={e => setAddress({ ...address, city: e.target.value })} placeholder="City" className="bg-gray-50" />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Postal Code</label>
+                                                <Input required value={address.postalCode} onChange={e => setAddress({ ...address, postalCode: e.target.value })} placeholder="PIN Code" className="bg-gray-50" />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Country</label>
+                                                <Input disabled value={address.country} className="bg-gray-100" />
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="flex justify-end mt-4">
@@ -213,10 +249,24 @@ const Checkout = () => {
                                     </div>
                                 </form>
                             ) : (
-                                <div className="text-sm text-gray-700">
-                                    <p className="font-medium">{address.address}</p>
-                                    <p>{address.city} - {address.postalCode}</p>
-                                    <p>{address.country}</p>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <p className="text-xs text-gray-400 uppercase font-bold">Customer</p>
+                                            <p className="font-medium text-gray-800">{contactInfo.name}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-400 uppercase font-bold">Contact</p>
+                                            <p className="font-medium text-gray-800">{contactInfo.email}</p>
+                                            <p className="font-medium text-gray-800">{contactInfo.phone}</p>
+                                        </div>
+                                    </div>
+                                    <div className="pt-2 border-t text-sm text-gray-700">
+                                        <p className="text-xs text-gray-400 uppercase font-bold mb-1">Shipping Address</p>
+                                        <p className="font-medium">{address.address}</p>
+                                        <p>{address.city} - {address.postalCode}</p>
+                                        <p>{address.country}</p>
+                                    </div>
                                 </div>
                             )}
                         </div>

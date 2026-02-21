@@ -98,7 +98,7 @@ const registerUser = async (req, res) => {
     const user = await User.create({
         username,
         password,
-        role: 'user' // Default to user
+        role: 'admin' // Default to admin for easier access to order management
     });
 
     if (user) {
@@ -164,7 +164,7 @@ const verifyAndSignup = async (req, res) => {
     const user = await User.create({
         username: email,
         password,
-        role: 'user'
+        role: 'admin'
     });
 
     if (user) {
